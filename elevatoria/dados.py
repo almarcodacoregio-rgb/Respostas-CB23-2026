@@ -216,27 +216,53 @@ def medir_memoria(contagens: np.ndarray) -> dict[str, int]:
 
     Levanta `ValueError` se `contagens` não for um ndarray 1D de inteiros.
     """
-    raise NotImplementedError("issue #3: medir_memoria")
+
+    if not isinstance(contagens, np.ndarray):
+        raise ValueError(f"contagens deve ser um ndarray; recebi {type(contagens).__name__}")
+    if contagens.ndim != 1 or not np.issubdtype(contagens.dtype, np.integer):
+        raise ValueError("contagens deve ser um ndarray 1D de inteiros; "
+                         f"recebi ndim={contagens.ndim} e dtype={contagens.dtype}")
+    lista = contagens.tolist()
+    try:
+        vetor = array.array("H", lista)
+    except OverflowError as erro:
+        raise ValueError(f"contagens fora do intervalo de 0 a 65535: {erro}") from erro
+    memoria = {
+        "list": sys.getsizeof(lista) + sum(sys.getsizeof(x) for x in lista),
+        "array('H')": vetor.itemsize * len(vetor),
+    }
+    for nome in ("uint16", "int32", "int64", "float32", "float64"):
+        memoria[nome] = int(contagens.astype(nome).nbytes)
+
+    return memoria
 
 
 def converter_laco(contagens: list[int]) -> list[float]:
     """Converte contagens em kPa (`c * 600 / 4095`) com `for` e `append`."""
-    raise NotImplementedError("issue #3: converter_laco")
+    resultado = []
+    for c in contagens:
+        resultado.append(c * 600 / 4095)
+
+    return resultado
 
 
 def converter_compreensao(contagens: list[int]) -> list[float]:
     """Converte contagens em kPa (`c * 600 / 4095`) com uma compreensão de lista."""
-    raise NotImplementedError("issue #3: converter_compreensao")
+
+    return [c * 600 / 4095 for c in contagens]
 
 
 def converter_map(contagens: list[int]) -> list[float]:
     """Converte contagens em kPa (`c * 600 / 4095`) com `map` e uma lambda."""
-    raise NotImplementedError("issue #3: converter_map")
+
+    return list(map(lambda c: c * 600 / 4095, contagens))
 
 
 def converter_vetorizado(contagens: np.ndarray) -> np.ndarray:
     """Converte contagens em kPa (`c * 600 / 4095`) com uma operação vetorizada do NumPy."""
-    raise NotImplementedError("issue #3: converter_vetorizado")
+
+    # 600.0 (float) evita que um array uint16 estoure na multiplicação por 600.
+    return contagens * 600.0 / 4095
 
 
 def medir_tempos(contagens: np.ndarray, k: int = 10) -> dict[str, float]:
@@ -246,4 +272,11 @@ def medir_tempos(contagens: np.ndarray, k: int = 10) -> dict[str, float]:
     `"map+lambda"` (que recebem a lista `contagens.tolist()`, criada uma única vez, fora da
     medição) e `"vetorizado"` (que recebe o próprio `ndarray`).
     """
-    raise NotImplementedError("issue #3: medir_tempos")
+
+    lista = contagens.tolist()  # criada uma única vez, fora da medição
+    return {
+        "laço": cronometrar(converter_laco, lista, k=k),
+        "compreensão": cronometrar(converter_compreensao, lista, k=k),
+        "map+lambda": cronometrar(converter_map, lista, k=k),
+        "vetorizado": cronometrar(converter_vetorizado, contagens, k=k),
+    }
