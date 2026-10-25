@@ -48,28 +48,36 @@ Minha hipótese é que o transmissor simulado não responde de forma linear, e a
 
 ### R5 — Previsão × medição (Etapa 3)
 
-Previsões registradas no commit: <!-- cole o hash curto do commit de previsões -->
+Previsões registradas no commit: 2993572
 
 | Grandeza | Previsão | Medido |
 | --- | --- | --- |
-| Memória da lista / memória do `uint16` | cerca de 1,2 | |
-| Tempo do laço / tempo vetorizado | cerca de 2 | |
-| Tempo da compreensão / tempo do laço | cerca de 1 (iguais) | |
+| Memória da lista / memória do `uint16` | cerca de 1,2 | 18,0 |
+| Tempo do laço / tempo vetorizado | cerca de 2 | 43,1 |
+| Tempo da compreensão / tempo do laço | cerca de 1 (iguais) | 0,78 |
+
+<!-- Explique a maior diferença entre previsão e medição; ... -->
 
 <!-- Explique a maior diferença entre previsão e medição; por que uint16 * 20 dá 16364; que dtype você escolheria para contagens e para kPa. -->
+
+
 
 ### R6 — Tipos da SerieTemporal (Etapa 4d)
 
 | Expressão | Tipo previsto | Tipo observado |
 | --- | --- | --- |
-| `s + s` | ndarray | |
-| `s[1:]` | ndarray | |
-| `s * 2` | ndarray | |
-| `s.sum()` | ndarray | |
-| `s[0]` | ndarray | |
+| `s + s` | ndarray | SerieTemporal |
+| `s[1:]` | ndarray | SerieTemporal |
+| `s * 2` | ndarray | SerieTemporal |
+| `s.sum()` | ndarray | SerieTemporal |
+| `s[0]` | ndarray | float64 |
 
 <!-- Explique o resultado que mais surpreendeu você. -->
+
+Previ `ndarray` para tudo e errei: `s + s`, `s[1:]` e `s * 2` devolveram `SerieTemporal`, porque a classe herda de `np.ndarray` e o NumPy mantém o tipo da subclasse nessas operações. O que mais me surpreendeu foi `s.sum()`, que também devolveu `SerieTemporal` e não um número simples, embora seja um valor só. Já `s[0]` devolveu `float64`: um elemento sozinho é um número, e não uma série.
 
 ### R7 — Issue #4
 
 <!-- Sintoma; o teste de regressão (nome); a causa, em termos da soma acumulada; a correção; por que os testes de aceitação não pegaram o defeito; mais um caso que eles não cobrem e qual teste seu o cobre. -->
+
+Sintoma: `media_movel(30)` em 600 pontos devolvia 570 valores, e não 571, e o `assert` do `marco1.py` falhava. Testes de regressão: `test_tamanho_do_resultado` e os outros quatro de `TestMediaMovelRegressao` (5 FAIL antes da correção). Causa: o `np.cumsum` não começa em zero, então `acumulada[janela:] - acumulada[:-janela]` perde a primeira janela. Correção: colocar `0.0` na frente da soma acumulada com `np.concatenate` e devolver `SerieTemporal` com `.view`. Os testes de aceitação só conferem o tipo, as janelas inválidas e que a série original não muda, nunca o tamanho nem os valores. Um caso que eles não cobrem é janela igual ao tamanho da série (dava 0 valores), que o `test_janela_igual_ao_tamanho` cobre.
