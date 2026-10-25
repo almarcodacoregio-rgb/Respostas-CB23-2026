@@ -10,6 +10,8 @@ import numpy as np
 from elevatoria.dados import valida_tag
 from elevatoria.serie import SerieTemporal
 
+from elevatoria.dados import ler_log, valida_tag
+
 # class TestPorTagExemplo(unittest.TestCase):
 #     """Exemplo do formato. `por_tag` é código existente da base."""
 
@@ -112,6 +114,42 @@ class TestReamostrar(unittest.TestCase):
         r = s.reamostrar(2)
         self.assertIsInstance(r, SerieTemporal)
         self.assertTrue(np.array_equal(s, copia))
+
+class TestLerLogContrato(unittest.TestCase):
+    """Issue #1: regras do contrato de ler_log que os testes de aceitação não verificam."""
+
+    def test_linhas_so_com_espacos_sao_ignoradas(self):
+        """Linhas vazias ou só com espaços não viram registro nem contam como inválidas."""
+        texto = "\n".join(["2026-10-05 08:00:00 INFO PT102 contagens=1623", "", "     ", "\t"])
+        registros, invalidas = ler_log(texto)
+        self.assertEqual(len(registros), 1)
+        self.assertEqual(invalidas, [])
+
+    def test_mes_impossivel_e_invalido(self):
+        """Uma linha com mês 13 casa com o padrão, mas é inválida por data impossível."""
+        linha = "2026-13-05 08:00:00 INFO PT102 contagens=1623"
+        registros, invalidas = ler_log(linha)
+        self.assertEqual(registros, [])
+        self.assertEqual(invalidas, [linha])
+
+    def test_hora_impossivel_e_invalida(self):
+        """Uma linha com hora 25 também é inválida."""
+        linha = "2026-10-05 25:00:00 INFO PT102 contagens=1623"
+        self.assertEqual(ler_log(linha), ([], [linha]))
+
+    def test_resto_sem_par_chave_valor_e_invalido(self):
+        """Se o resto não tem nenhum par chave=valor, a linha é inválida e volta intacta."""
+        linha = "2026-10-05 08:00:00 INFO PT102 sem pares aqui"
+        registros, invalidas = ler_log(linha)
+        self.assertEqual(registros, [])
+        self.assertEqual(invalidas, [linha])
+
+    def test_registros_seguem_a_ordem_do_texto(self):
+        """Os registros saem na mesma ordem em que as linhas aparecem no texto."""
+        texto = "\n".join(["2026-10-05 08:00:06 INFO PT102 contagens=2",
+                           "2026-10-05 08:00:00 INFO PT101 contagens=1"])
+        registros, _ = ler_log(texto)
+        self.assertEqual([r.tag for r in registros], ["PT102", "PT101"])
 
 if __name__ == "__main__":
     unittest.main()
