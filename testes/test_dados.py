@@ -7,10 +7,8 @@ import unittest
 
 import numpy as np
 
-from elevatoria.dados import valida_tag
-from elevatoria.serie import SerieTemporal
-
 from elevatoria.dados import ler_log, valida_tag
+from elevatoria.serie import SerieTemporal
 
 # class TestPorTagExemplo(unittest.TestCase):
 #     """Exemplo do formato. `por_tag` é código existente da base."""
