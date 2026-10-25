@@ -32,8 +32,9 @@ class SerieTemporal(np.ndarray):
         """
         if janela < 1 or janela > len(self):
             raise ValueError(f"janela deve estar entre 1 e {len(self)}; recebi {janela}")
-        acumulada = np.cumsum(self)
-        return (acumulada[janela:] - acumulada[:-janela]) / janela
+        # A soma acumulada precisa começar em 0: sem isso a primeira janela se perde.
+        acumulada = np.concatenate(([0.0], np.cumsum(self)))
+        return ((acumulada[janela:] - acumulada[:-janela]) / janela).view(SerieTemporal)
 
     def variacao(self) -> SerieTemporal:
         """Diferenças entre pontos consecutivos (`n - 1` valores)."""
