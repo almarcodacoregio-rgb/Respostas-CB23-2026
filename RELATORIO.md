@@ -56,7 +56,6 @@ Previsões registradas no commit: 2993572
 | Tempo do laço / tempo vetorizado | cerca de 2 | 43,1 |
 | Tempo da compreensão / tempo do laço | cerca de 1 (iguais) | 0,78 |
 
-<!-- Explique a maior diferença entre previsão e medição; ... -->
 
 <!-- Explique a maior diferença entre previsão e medição; por que uint16 * 20 dá 16364; que dtype você escolheria para contagens e para kPa. -->
 
