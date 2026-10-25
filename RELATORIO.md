@@ -30,13 +30,21 @@ Se `valida_tag` usasse `re.match` ele iria retornar True para strings que deveri
 
 <!-- Por que ler_log devolve as linhas descartadas; uma situação real em que descartar em silêncio esconderia um problema. -->
 
+O `ler_log` devolve as linhas descartadas para que quem o chamou possa contá-las e conferi-las, em vez de perdê-las. 
+No meu log foram 2404 registros válidos e 4 linhas inválidas. Se, num dia ruim, uma falha de comunicação com os instrumentos deixasse centenas de linhas inválidas e elas fossem ignoradas em silêncio, as médias ainda pareceriam normais, mas a estação ficaria horas sem alguns instrumentos e ninguém seria avisado.
+
 ### R3 — Late binding
 
 <!-- Por que errados["PT102"](4095) dá 409,5 e por que a sua criar_conversores não tem o problema. -->
 
+A lambda `lambda c: c * k` não guarda o valor de `k`: ela lê a variável `k` só no momento em que é chamada. Quando chamo `errados["PT102"](4095)`, o laço já terminou e `k` vale 0,1 (o fator de `FT201`, o último do dicionário), então o resultado é 4095 × 0,1 = 409,5. Na minha `criar_conversores`, cada tag chama `_com_fator(fator)`, e cada chamada tem o seu próprio `fator`, que a lambda de dentro guarda. Por isso `certos["PT102"](4095)` dá 600,0.
+
 ### R4 — Escala nominal
 
 <!-- Hipótese para a diferença da Etapa 2(f) e onde, no código da base, está a explicação. -->
+
+A escala nominal (600/4095) supõe que a pressão é proporcional às contagens. Por ela, a média normal de PT102 dá 261,9 kPa, contra 380 kPa de conferência. 
+Minha hipótese é que o transmissor simulado não responde de forma linear, e a reta subestima a pressão. No código da base, em `fornecido/simulador.py`, a função `p_real` calcula `600 * sin(0,5 * pi * c / 4095)`, e `c_real` faz a conta inversa com `arcsin`. Com contagens perto de 1790, essa curva dá cerca de 380 kPa.
 
 ### R5 — Previsão × medição (Etapa 3)
 
