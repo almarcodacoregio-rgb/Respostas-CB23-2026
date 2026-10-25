@@ -77,5 +77,41 @@ class TestMediaMovelRegressao(unittest.TestCase):
         """O resultado continua sendo uma SerieTemporal (guarda, passa antes e depois)."""
         self.assertIsInstance(self.s.media_movel(2), SerieTemporal)
 
+class TestReamostrar(unittest.TestCase):
+    """Issue #5: SerieTemporal.reamostrar."""
+
+    def test_blocos_exatos(self):
+        """Dez pontos com k=5 dão duas médias calculadas à mão."""
+        s = SerieTemporal.de_lista(range(1, 11))
+        self.assertTrue(np.allclose(s.reamostrar(5), [3.0, 8.0]))
+
+    def test_sobra_no_fim_e_descartada(self):
+        """Com 11 pontos e k=5, o último ponto (muito diferente) não entra em nenhuma média."""
+        s = SerieTemporal.de_lista([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1000])
+        r = s.reamostrar(5)
+        self.assertEqual(len(r), 2)
+        self.assertTrue(np.allclose(r, [3.0, 8.0]))
+
+    def test_k_um_e_k_igual_ao_tamanho(self):
+        """Com k=1 devolve a própria série; com k=len devolve um único valor, a média."""
+        s = SerieTemporal.de_lista([2.0, 4.0, 9.0])
+        self.assertTrue(np.allclose(s.reamostrar(1), s))
+        self.assertAlmostEqual(float(s.reamostrar(3)[0]), 5.0)
+
+    def test_k_invalido_levanta_value_error(self):
+        """k=0 e k maior que o tamanho da série levantam ValueError."""
+        s = SerieTemporal.de_lista([1.0, 2.0, 3.0])
+        for k in (0, 4):
+            with self.subTest(k=k), self.assertRaises(ValueError):
+                s.reamostrar(k)
+
+    def test_nao_modifica_a_serie_e_mantem_o_tipo(self):
+        """O resultado é uma SerieTemporal e a série original não muda."""
+        s = SerieTemporal.de_lista([1.0, 2.0, 3.0, 4.0, 5.0])
+        copia = np.array(s)
+        r = s.reamostrar(2)
+        self.assertIsInstance(r, SerieTemporal)
+        self.assertTrue(np.array_equal(s, copia))
+
 if __name__ == "__main__":
     unittest.main()
